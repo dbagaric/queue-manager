@@ -8,7 +8,7 @@ use Disque\Connection\Credentials;
 use Punchkick\QueueManager\Disque\DisqueQueueManager;
 use Punchkick\QueueManager\Exception\BadConnectionException;
 use Punchkick\QueueManager\Exception\InvalidTypeException;
-use Punchkick\QueueManager\JobHandler\JobHandlerInterface;
+use Punchkick\QueueManager\JobHandlerInterface;
 use Punchkick\QueueManager\Offline\OfflineQueueManager;
 
 /**

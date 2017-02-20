@@ -3,7 +3,7 @@
 namespace Punchkick\QueueManager;
 
 use Punchkick\QueueManager\Exception\EmptyQueueException;
-use Punchkick\QueueManager\JobHandler\JobHandlerInterface;
+use Punchkick\QueueManager\JobHandlerInterface;
 
 /**
  * Class Worker

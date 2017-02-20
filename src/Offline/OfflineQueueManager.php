@@ -3,7 +3,7 @@
 namespace Punchkick\QueueManager\Offline;
 
 use BadMethodCallException;
-use Punchkick\QueueManager\JobHandler\JobHandlerInterface;
+use Punchkick\QueueManager\JobHandlerInterface;
 use Punchkick\QueueManager\JobInterface;
 use Punchkick\QueueManager\QueueManagerInterface;
 
