@@ -1,6 +1,6 @@
 <?php
 
-namespace Punchkick\QueueManager\JobHandler;
+namespace Punchkick\QueueManager;
 
 use Punchkick\QueueManager\JobInterface;
 
