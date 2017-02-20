@@ -1,0 +1,20 @@
+{
+    "name": "punchkick/queue-manager",
+    "type": "library",
+    "require": {
+        "mariano/disque-php": "^2.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Daniel Wolf",
+            "email": "daniel.wolf@punchkick.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "Punchkick\\QueueManager\\": "src/"
+        }
+    }
+}
