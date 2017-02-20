@@ -37,9 +37,11 @@ class QueueManagerFactory
      * @param int $queueType
      * @param string $host
      * @param int $port
+     * @param bool $offlineFallback
      * @return QueueManagerInterface
+     * @throws BadConnectionException
      */
-    public function make(int $queueType, string $host, int $port): QueueManagerInterface
+    public function make(int $queueType, string $host, int $port, bool $offlineFallback = true): QueueManagerInterface
     {
         try {
             if ($queueType === self::TYPE_DISQUE) {
@@ -48,7 +50,11 @@ class QueueManagerFactory
                 throw new InvalidTypeException(sprintf('Queue type "%s" no supported.', $queueType));
             }
         } catch (BadConnectionException $e) {
-            return $this->getOfflineQueueManager();
+            if ($offlineFallback) {
+                return $this->getOfflineQueueManager();
+            } else {
+                throw $e;
+            }
         }
     }
 
