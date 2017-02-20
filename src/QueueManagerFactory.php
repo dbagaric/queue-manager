@@ -34,12 +34,12 @@ class QueueManagerFactory
     }
 
     /**
-     * @param string $queueType
+     * @param int $queueType
      * @param string $host
      * @param int $port
      * @return QueueManagerInterface
      */
-    public function make(string $queueType, string $host, int $port): QueueManagerInterface
+    public function make(int $queueType, string $host, int $port): QueueManagerInterface
     {
         try {
             if ($queueType === self::TYPE_DISQUE) {
