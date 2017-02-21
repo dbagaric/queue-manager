@@ -64,7 +64,7 @@ class YourJob implements JobHandlerInterface
 
 ## Adding Jobs to the Queue
 
-### Create an instance of QueueManagerFactory
+### Create an Instance of QueueManagerFactory
 
 The Factory will provide you an instance of your chosen queue type and can 
 fallback to offline mode if it has trouble connecting.
@@ -102,7 +102,7 @@ $queueManager->setJobHandlers([
 $queueManager->addJobHandler(new YourJob());
 ```
 
-### Getting an instance of QueueManagerInterface
+### Getting an Instance of QueueManagerInterface
 
 The make method accepts the type of queue you are requesting, the host of the 
 queue server, and the port of the queue server.
@@ -112,7 +112,7 @@ queue server, and the port of the queue server.
 $queueManager = $queueManagerFactory->make(QueueManagerFactory::TYPE_DISQUE, 127.0.0.1, 7711);
 ```
 
-#### Disable the offline fallback
+#### Disable the Offline Fallback
 
 You can disable the offline fallback by passing `false` as the fourth parameter to `make`.
 If you do that, and the connection fails, `make` will throw a 
@@ -126,9 +126,61 @@ $queueManager = $queueManagerFactory->make(QueueManagerFactory::TYPE_DISQUE, 127
 ### Queuing Jobs
 
 Once you have an instance of QueueManagerInterface, you can queue up jobs using 
-the `addJob` method.
+the `addJob` method. Pass in the name of your job and the job data in the form 
+of an array.
+
+```php
+$queueManager->addJob(YourJob::getJobName(), ['your_key' => 'your_val']);
+```
 
 
 ## Setting Up Workers
 
+## Get a Worker Instance
 
+In your `worker.php` script, create an instance of 
+`\Punchkick\QueueManager\Worker`. You'll need to pass in an instance of 
+QueueManagerInterface.
+
+```php
+$queueManagerFactory = new Punchkick\QueueManager\QueueManagerFactory([
+    new YourJob(), 
+    new YourOtherJob()
+]);
+$queueManager = $quemanagerFactory->make(
+    Punchkick\QueueManager\QueueManagerFactory::TYPE_DISQUE, 
+    '127.0.0.1', 
+    7711, 
+    false
+);
+$worker = new Worker($queueManager);
+```
+
+## Add the Job Handlers
+
+```php
+$worker->addJob(new YourJob());
+$worker->addJob(new YourOtherJob());
+```
+
+## Run the worker process
+
+```php
+$worker->run();
+```
+
+## Running the worker script
+
+```bash
+/path/to/php /path/to/worker.php 2>/dev/null &
+```
+
+## Restarting the worker script
+
+If you send the worker process a HUP signal, it will finish the job it is 
+performing before restarting. This is useful so that you don't stop a job 
+halfway through.
+
+```bash
+kill -HUP 1111 # substitute 1111 with your PID
+```
