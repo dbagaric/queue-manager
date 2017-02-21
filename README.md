@@ -36,7 +36,7 @@ Simply create a new class that implements the `JobHandlerInterface`.
 ```php
 use Punchkick\QueueManager\JobHandlerInterface;
 
-class YourJob implements JobHandlerInterface
+class YourJobHandler implements JobHandlerInterface
 {
     /**
      * @return string
@@ -67,7 +67,10 @@ class YourJob implements JobHandlerInterface
 ### Create an Instance of QueueManagerFactory
 
 The Factory will provide you an instance of your chosen queue type and can 
-fallback to offline mode if it has trouble connecting.
+fallback to "offline mode" if it has trouble connecting. The OfflineQueueManager 
+will simply execute the job immediately if the queue is not available. This is 
+useful for testing in environments where you don't have access to a queue 
+server.
 
 ```php
 $queueManagerFactory = new Punchkick\QueueManager\QueueManagerFactory();
@@ -75,15 +78,16 @@ $queueManagerFactory = new Punchkick\QueueManager\QueueManagerFactory();
 
 ### Adding Job Handlers to the QueueManagerFactory
 
-If you are using the offline fallback, you'll need to add your job handlers to
-the QueueManagerFactory. You can do that in a few ways.
+If you are going to use the offline fallback, you'll need to add your job 
+handlers to the QueueManagerFactory so they can be executed synchronously. 
+You can do that in a few ways.
 
 * During instantiation
 
 ```php
 $queueManagerFactory = new Punchkick\QueueManager\QueueManagerFactory([
-    new YourJob(), 
-    new YourOtherJob()
+    new YourJobHandler(), 
+    new YourOtherJobHandler()
 ]);
 ```
 
@@ -91,15 +95,15 @@ $queueManagerFactory = new Punchkick\QueueManager\QueueManagerFactory([
 
 ```php
 $queueManager->setJobHandlers([
-    new YourJob(), 
-    new YourOtherJob()
+    new YourJobHandler(), 
+    new YourOtherJobHandler()
 ]);
 ```
 
 * After instantiation, one at a time
 
 ```php
-$queueManager->addJobHandler(new YourJob());
+$queueManager->addJobHandler(new YourJobHandler());
 ```
 
 ### Getting an Instance of QueueManagerInterface
@@ -109,18 +113,27 @@ queue server, and the port of the queue server.
 
 ```php
 /** @var QueueManagerInterface $queueManager */
-$queueManager = $queueManagerFactory->make(QueueManagerFactory::TYPE_DISQUE, 127.0.0.1, 7711);
+$queueManager = $queueManagerFactory->make(
+    QueueManagerFactory::TYPE_DISQUE, 
+    '127.0.0.1', 
+    7711
+);
 ```
 
 #### Disable the Offline Fallback
 
-You can disable the offline fallback by passing `false` as the fourth parameter to `make`.
-If you do that, and the connection fails, `make` will throw a 
+You can disable the offline fallback by passing `false` as the fourth parameter 
+to `make`. If you do that, and the connection fails, `make` will throw a 
 `\Punchkick\QueueManager\Exception\BadConnectionException`.
 
 ```php
 /** @var QueueManagerInterface $queueManager */
-$queueManager = $queueManagerFactory->make(QueueManagerFactory::TYPE_DISQUE, 127.0.0.1, 7711, false);
+$queueManager = $queueManagerFactory->make(
+    QueueManagerFactory::TYPE_DISQUE, 
+    '127.0.0.1', 
+    7711, 
+    false
+);
 ```
 
 ### Queuing Jobs
@@ -130,7 +143,7 @@ the `addJob` method. Pass in the name of your job and the job data in the form
 of an array.
 
 ```php
-$queueManager->addJob(YourJob::getJobName(), ['your_key' => 'your_val']);
+$queueManager->addJob(YourJobHandler::getJobName(), ['your_key' => 'your_val']);
 ```
 
 
@@ -140,12 +153,12 @@ $queueManager->addJob(YourJob::getJobName(), ['your_key' => 'your_val']);
 
 In your `worker.php` script, create an instance of 
 `\Punchkick\QueueManager\Worker`. You'll need to pass in an instance of 
-QueueManagerInterface.
+QueueManagerInterface. You'll likely want to disable the offline fallback.
 
 ```php
 $queueManagerFactory = new Punchkick\QueueManager\QueueManagerFactory([
-    new YourJob(), 
-    new YourOtherJob()
+    new YourJobHandler(), 
+    new YourOtherJobHandler()
 ]);
 $queueManager = $quemanagerFactory->make(
     Punchkick\QueueManager\QueueManagerFactory::TYPE_DISQUE, 
@@ -156,11 +169,12 @@ $queueManager = $quemanagerFactory->make(
 $worker = new Worker($queueManager);
 ```
 
-## Add the Job Handlers
+## Add the Job Handlers to the Worker Instance
+
 
 ```php
-$worker->addJob(new YourJob());
-$worker->addJob(new YourOtherJob());
+$worker->addJobHandler(new YourJobHandler());
+$worker->addJobHandler(new YourOtherJobHandler());
 ```
 
 ## Run the worker process
@@ -178,9 +192,9 @@ $worker->run();
 ## Restarting the worker script
 
 If you send the worker process a HUP signal, it will finish the job it is 
-performing before restarting. This is useful so that you don't stop a job 
-halfway through.
+performing before dying. This is useful so that you don't stop a job halfway 
+through.
 
 ```bash
-kill -HUP 1111 # substitute 1111 with your PID
+kill -HUP 1111 # substitute 1111 with the PID of your worker process
 ```
