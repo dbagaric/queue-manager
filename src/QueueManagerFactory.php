@@ -89,17 +89,15 @@ class QueueManagerFactory
      */
     protected function getDisqueQueueManager(string $host, int $port): DisqueQueueManager
     {
-        $client = new Client([
-            new Credentials($host, $port)
-        ]);
-
         try {
-            $client->hello();
+            return new DisqueQueueManager(
+                new Client([
+                    new Credentials($host, $port)
+                ])
+            );
         } catch (ConnectionException $e) {
             throw new BadConnectionException('Could not connect to Disque server', 0, $e);
         }
-
-        return new DisqueQueueManager($client);
     }
 
     /**
