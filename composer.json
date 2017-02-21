@@ -1,10 +1,11 @@
 {
     "name": "punchkick/queue-manager",
+    "description": "a simple interface to handle different types of queues",
     "type": "library",
     "require": {
         "mariano/disque-php": "^2.0"
     },
-    "license": "MIT",
+    "license": "proprietary",
     "authors": [
         {
             "name": "Daniel Wolf",
