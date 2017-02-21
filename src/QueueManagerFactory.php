@@ -8,7 +8,6 @@ use Disque\Connection\Credentials;
 use Punchkick\QueueManager\Disque\DisqueQueueManager;
 use Punchkick\QueueManager\Exception\BadConnectionException;
 use Punchkick\QueueManager\Exception\InvalidTypeException;
-use Punchkick\QueueManager\JobHandlerInterface;
 use Punchkick\QueueManager\Offline\OfflineQueueManager;
 
 /**
@@ -90,15 +89,17 @@ class QueueManagerFactory
      */
     protected function getDisqueQueueManager(string $host, int $port): DisqueQueueManager
     {
+        $client = new Client([
+            new Credentials($host, $port)
+        ]);
+
         try {
-            return new DisqueQueueManager(
-                new Client([
-                    new Credentials($host, $port)
-                ])
-            );
+            $client->hello();
         } catch (ConnectionException $e) {
             throw new BadConnectionException('Could not connect to Disque server', 0, $e);
         }
+
+        return new DisqueQueueManager($client);
     }
 
     /**
