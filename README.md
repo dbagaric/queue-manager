@@ -35,6 +35,7 @@ Simply create a new class that implements the `JobHandlerInterface`.
 
 ```php
 use Punchkick\QueueManager\JobHandlerInterface;
+use Punchkick\QueueManager\JobInterface;
 
 class YourJobHandler implements JobHandlerInterface
 {
