@@ -35,7 +35,7 @@ class Worker
     /**
      * @return void
      */
-    public function hupSignalHandler(): void
+    public function hupSignalHandler()
     {
         exit('HUP signal received');
     }
@@ -43,7 +43,7 @@ class Worker
     /**
      * @param JobHandlerInterface $jobHandler
      */
-    public function addJobHandler(JobHandlerInterface $jobHandler): void
+    public function addJobHandler(JobHandlerInterface $jobHandler)
     {
         $this->jobHandlers[] = $jobHandler;
     }
@@ -51,7 +51,7 @@ class Worker
     /**
      * @return void
      */
-    public function run(): void
+    public function run()
     {
         while (true) {
             $this->loopThroughHandlers();
@@ -61,7 +61,7 @@ class Worker
     /**
      * @return void
      */
-    private function loopThroughHandlers(): void
+    private function loopThroughHandlers()
     {
         foreach ($this->jobHandlers as $jobHandler) {
             pcntl_signal_dispatch();
@@ -72,7 +72,7 @@ class Worker
     /**
      * @param $jobHandler
      */
-    private function useJobHandler(JobHandlerInterface $jobHandler): void
+    private function useJobHandler(JobHandlerInterface $jobHandler)
     {
         try {
             $job = $this->queueManager->getJob($jobHandler::getJobName());
