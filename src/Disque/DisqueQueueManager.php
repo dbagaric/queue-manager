@@ -38,7 +38,7 @@ class DisqueQueueManager implements QueueManagerInterface
         $job = new Job($jobData);
 
         $queue = $this->client->queue($jobName);
-        $queue->push($job);
+        $queue->push($job, ['ttl' => 604800]); // 1 week
 
         return true;
     }
@@ -51,7 +51,7 @@ class DisqueQueueManager implements QueueManagerInterface
     public function getJob(string $jobName): JobInterface
     {
         $queue = $this->client->queue($jobName);
-        $job = $queue->pull(3);
+        $job = $queue->pull(1000); // 1 second
 
         if (!$job) {
             throw new EmptyQueueException;

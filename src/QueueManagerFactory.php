@@ -46,7 +46,7 @@ class QueueManagerFactory
             if ($queueType === self::TYPE_DISQUE) {
                 return $this->getDisqueQueueManager($host, $port);
             } else {
-                throw new InvalidTypeException(sprintf('Queue type "%s" no supported.', $queueType));
+                throw new InvalidTypeException(sprintf('Queue type "%s" is not supported', $queueType));
             }
         } catch (BadConnectionException $e) {
             if ($offlineFallback) {
@@ -94,7 +94,7 @@ class QueueManagerFactory
         ]);
 
         try {
-            $client->hello();
+            $client->connect();
         } catch (ConnectionException $e) {
             throw new BadConnectionException('Could not connect to Disque server', 0, $e);
         }

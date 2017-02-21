@@ -141,7 +141,8 @@ $queueManager = $queueManagerFactory->make(
 
 Once you have an instance of QueueManagerInterface, you can queue up jobs using 
 the `addJob` method. Pass in the name of your job and the job data in the form 
-of an array.
+of an array. Jobs queued in Disque will have a TTL of one week. After that, the job will 
+be deleted from the queue. The TTL is a requirement of Disque.
 
 ```php
 $queueManager->addJob(YourJobHandler::getJobName(), ['your_key' => 'your_val']);
