@@ -9,17 +9,38 @@ class OfflineJobTest extends TestCase
     /**
      * @var OfflineJob
      */
-    protected $instance;
+    protected $offlineJob;
+
+    /**
+     * @var array
+     */
+    protected $mockData;
 
     public function setUp()
     {
-        $this->instance = new OfflineJob([
+        $this->mockData = [
             'mock' => 'data'
-        ]);
+        ];
+        $this->offlineJob = new OfflineJob($this->mockData);
     }
 
-    public function testIsTesting()
+    public function testMarkProcessing()
     {
-        $this->markTestIncomplete();
+        $this->assertTrue($this->offlineJob->markProcessing());
+    }
+
+    public function testGetData()
+    {
+        $this->assertEquals($this->mockData, $this->offlineJob->getData());
+    }
+
+    public function testMarkDone()
+    {
+        $this->assertTrue($this->offlineJob->markDone());
+    }
+
+    public function testMarkFailed()
+    {
+        $this->assertTrue($this->offlineJob->markFailed());
     }
 }
