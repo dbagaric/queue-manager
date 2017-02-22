@@ -30,8 +30,7 @@ class DisqueJobTest extends TestCase
     {
         $mockJob = $this->getMockBuilder(JobInterface::class)
             ->setMethods(['getBody'])
-            ->getMock();
-        $mock
+            ->getMockForAbstractClass();
 
         $mockQueue = $this->getMockBuilder(Queue::class)
             ->setMethods(['processing'])
