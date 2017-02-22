@@ -26,7 +26,7 @@ class Worker
      */
     public function __construct(QueueManagerInterface $queueManager)
     {
-        pcntl_signal(SIGHUP, [$this, 'hupSignalHandler']);
+        \pcntl_signal(SIGHUP, [$this, 'hupSignalHandler']);
 
         $this->queueManager = $queueManager;
         $this->jobHandlers = [];

@@ -1,0 +1,5 @@
+---
+language: php7
+build:
+    - "composer install -ovn"
+    - "./vendor/bin/phpunit"
