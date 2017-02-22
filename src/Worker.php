@@ -61,7 +61,7 @@ class Worker
     /**
      * @return void
      */
-    private function loopThroughHandlers()
+    protected function loopThroughHandlers()
     {
         foreach ($this->jobHandlers as $jobHandler) {
             pcntl_signal_dispatch();
@@ -72,7 +72,7 @@ class Worker
     /**
      * @param $jobHandler
      */
-    private function useJobHandler(JobHandlerInterface $jobHandler)
+    protected function useJobHandler(JobHandlerInterface $jobHandler)
     {
         try {
             $job = $this->queueManager->getJob($jobHandler::getJobName());

@@ -6,6 +6,7 @@ use Disque\Queue\Job;
 use Disque\Queue\Queue;
 use PHPUnit\Framework\TestCase;
 use Punchkick\QueueManager\Disque\DisqueQueueManager;
+use Punchkick\QueueManager\Exception\EmptyQueueException;
 
 class DisqueQueueManagerTest extends TestCase
 {
@@ -82,7 +83,7 @@ class DisqueQueueManagerTest extends TestCase
             ->with(1000)
             ->willReturn(null);
 
-        $this->expectException('\Punchkick\QueueManager\Exception\EmptyQueueException');
+        $this->expectException(EmptyQueueException::class);
         $this->disqueQueueManager->getJob($jobName);
     }
 

@@ -1,6 +1,7 @@
 <?php
 namespace Punchkick\QueueManager\Offline;
 
+use BadMethodCallException;
 use PHPUnit\Framework\TestCase;
 use Punchkick\QueueManager\JobHandlerInterface;
 use Punchkick\QueueManager\JobInterface;
@@ -33,7 +34,7 @@ class OfflineQueueManagerTest extends TestCase
 
     public function testGetJob()
     {
-        $this->expectException('\BadMethodCallException');
+        $this->expectException(BadMethodCallException::class);
 
         $offlineQueueManager = new OfflineQueueManager([]);
         $offlineQueueManager->getJob('some_job');

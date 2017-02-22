@@ -2,7 +2,7 @@
 namespace Punchkick\QueueManager;
 
 use PHPUnit\Framework\TestCase;
-use Punchkick\QueueManager\Worker;
+use Symfony\Component\Process\Process;
 
 class WorkerTest extends TestCase
 {
@@ -18,8 +18,23 @@ class WorkerTest extends TestCase
         $this->instance = new Worker($mockQueueManager);
     }
 
-    public function testIsTesting()
+    public function testHupSignal()
     {
-        $this->markTestIncomplete();
+        $proc = new Process('exec ' . PHP_BINARY . ' ' . escapeshellarg(__DIR__ . '/test-worker-script.php'));
+        $proc->start();
+
+        sleep(3);
+
+        $this->assertTrue(
+            $proc->isRunning(),
+            'Process exited prematurely: ' . $proc->getOutput() . $proc->getErrorOutput()
+        );
+
+        $proc->signal(SIGHUP);
+
+        sleep(1);
+
+        $this->assertFalse($proc->isRunning());
+        $this->assertEquals('HUP signal received', $proc->getOutput());
     }
 }
