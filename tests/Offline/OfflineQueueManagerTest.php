@@ -2,22 +2,40 @@
 namespace Punchkick\QueueManager\Offline;
 
 use PHPUnit\Framework\TestCase;
-use Punchkick\QueueManager\Offline\OfflineQueueManager;
+use Punchkick\QueueManager\JobHandlerInterface;
+use Punchkick\QueueManager\JobInterface;
 
 class OfflineQueueManagerTest extends TestCase
 {
-    /**
-     * @var OfflineQueueManager
-     */
-    protected $instance;
-
-    public function setUp()
+    public function testAddJob()
     {
-        $this->instance = new OfflineQueueManager([]);
+        $jobName = 'foo_bar';
+        $jobData = ['foo' => 'bar'];
+
+        $mockJobHandler = new class implements JobHandlerInterface {
+            public static function getJobName(): string
+            {
+                return 'foo_bar';
+            }
+
+            public function handle(JobInterface $job): bool
+            {
+                assert($job->getData() === ['foo' => 'bar']);
+
+                return false;
+            }
+        };
+
+        $offlineQueueManager = new OfflineQueueManager([$mockJobHandler]);
+
+        $this->assertFalse($offlineQueueManager->addJob($jobName, $jobData));
     }
 
-    public function testIsTesting()
+    public function testGetJob()
     {
-        $this->markTestIncomplete();
+        $this->expectException('\BadMethodCallException');
+
+        $offlineQueueManager = new OfflineQueueManager([]);
+        $offlineQueueManager->getJob('some_job');
     }
 }

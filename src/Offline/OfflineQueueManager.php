@@ -42,7 +42,7 @@ class OfflineQueueManager implements QueueManagerInterface
             };
         }
 
-        return false;
+        return true;
     }
 
     /**
