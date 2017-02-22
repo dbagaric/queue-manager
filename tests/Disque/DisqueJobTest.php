@@ -8,23 +8,41 @@ use Punchkick\QueueManager\Disque\DisqueJob;
 
 class DisqueJobTest extends TestCase
 {
-    /**
-     * @var DisqueJob
-     */
-    protected $instance;
-
-    public function setUp()
+    public function testProcessing()
     {
-        $mockQueue = $this->getMockBuilder(Queue::class)
-            ->disableOriginalConstructor()
-            ->getMock();
         $mockJob = $this->getMockBuilder(JobInterface::class)
             ->getMock();
-        $this->instance = new DisqueJob($mockQueue, $mockJob);
+
+        $mockQueue = $this->getMockBuilder(Queue::class)
+            ->setMethods(['processing'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $mockQueue->expects($this->once())
+            ->method('processing')
+            ->with($mockJob);
+
+        $disqueJob = new DisqueJob($mockQueue, $mockJob);
+
+        $this->assertTrue($disqueJob->markProcessing());
     }
 
-    public function testIsTesting()
+    public function testGetData()
     {
-        $this->markTestIncomplete();
+        $mockJob = $this->getMockBuilder(JobInterface::class)
+            ->setMethods(['getBody'])
+            ->getMock();
+        $mock
+
+        $mockQueue = $this->getMockBuilder(Queue::class)
+            ->setMethods(['processing'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $mockQueue->expects($this->once())
+            ->method('processing')
+            ->with($mockJob);
+
+        $disqueJob = new DisqueJob($mockQueue, $mockJob);
+
+        $this->assertTrue($disqueJob->markProcessing());
     }
 }
