@@ -2,5 +2,4 @@
 language: php7
 build:
     - "composer install -ovn"
-    - "mv phpunit.xml.dist phpunit.xml"
     - "./vendor/bin/phpunit"

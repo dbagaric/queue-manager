@@ -1,3 +1,5 @@
+<img src="https://api.ci.pkiapps.com/gitlab/punchkickinteractive/queue-manager.svg?branch=master" />
+
 # Punchkick Queue Manager
 
 Provides a simple interface to handle different types of queues, without coupling your logic to the specific queue software.
