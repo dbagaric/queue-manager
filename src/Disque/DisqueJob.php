@@ -2,6 +2,7 @@
 
 namespace Punchkick\QueueManager\Disque;
 
+use Disque\Connection\Response\ResponseException;
 use Disque\Queue\JobInterface as DisqueJobInterface;
 use Disque\Queue\Queue;
 use Punchkick\QueueManager\JobInterface;
@@ -38,7 +39,14 @@ class DisqueJob implements JobInterface
      */
     public function markProcessing(): bool
     {
-        $this->queue->processing($this->job);
+        try {
+            $this->queue->processing($this->job);
+        } catch (ResponseException $e) {
+            // this can occur if the job has already reach 50% TTL
+            // it's a strange limitation of disque, but can be safely
+            // ignored here
+            return false;
+        }
 
         return true;
     }
