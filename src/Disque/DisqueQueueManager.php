@@ -38,7 +38,10 @@ class DisqueQueueManager implements QueueManagerInterface
         $job = new Job($jobData);
 
         $queue = $this->client->queue($jobName);
-        $queue->push($job, ['ttl' => 604800]); // 1 week
+        $queue->push($job, [
+            'ttl' => 604800,
+            'async' => true
+        ]); // 1 week
 
         return true;
     }
