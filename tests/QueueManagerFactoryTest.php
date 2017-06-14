@@ -34,7 +34,10 @@ class QueueManagerFactoryTest extends TestCase
         $this->expectException(InvalidTypeException::class);
 
         $queueManagerFactory = new QueueManagerFactory();
-        $queueManagerFactory->make(2, '127.0.0.1', 7711);
+        $queueManagerFactory->make(999999999, [
+            'host' => '127.0.0.1',
+            'port' => 7711
+        ]);
     }
 
     public function testFallsbackToOffline()
@@ -44,7 +47,15 @@ class QueueManagerFactoryTest extends TestCase
         Warning::$enabled = false;
 
         $queueManagerFactory = new QueueManagerFactory();
-        $offlineQueueManager = $queueManagerFactory->make(QueueManagerFactory::TYPE_DISQUE, '127.0.0.1', 7711);
+        $offlineQueueManager = $queueManagerFactory->make(
+            QueueManagerFactory::TYPE_DISQUE,
+            [
+                'host' => '127.0.0.1',
+                'port' => 7711
+            ],
+            null,
+            true
+        );
         $this->assertInstanceOf(OfflineQueueManager::class, $offlineQueueManager);
 
         error_reporting($oldErrorReporting);
@@ -58,9 +69,15 @@ class QueueManagerFactoryTest extends TestCase
 
         $this->expectException(BadConnectionException::class);
         $queueManagerFactory = new QueueManagerFactory();
-        $offlineQueueManager = $queueManagerFactory->make(QueueManagerFactory::TYPE_DISQUE, '127.0.0.1', 7711, false);
+        $offlineQueueManager = $queueManagerFactory->make(
+            QueueManagerFactory::TYPE_DISQUE,
+            [
+                'host' => '127.0.0.1',
+                'port' => 7711
+            ],
+            null
+        );
 
         error_reporting($oldErrorReporting);
     }
-
 }

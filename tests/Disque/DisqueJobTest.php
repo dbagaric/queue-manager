@@ -3,7 +3,9 @@ namespace Punchkick\QueueManager\Disque;
 
 use Disque\Queue\JobInterface;
 use Disque\Queue\Queue;
+use Disque\Connection\Response\ResponseException;
 use PHPUnit\Framework\TestCase;
+use Punchkick\QueueManager\DoneLog\DoneLogInterface;
 
 class DisqueJobTest extends TestCase
 {
@@ -20,9 +22,34 @@ class DisqueJobTest extends TestCase
             ->method('processing')
             ->with($mockJob);
 
-        $disqueJob = new DisqueJob($mockQueue, $mockJob);
+        $mockDoneLog = $this->getMockBuilder(DoneLogInterface::class)
+            ->getMockForAbstractClass();
+
+        $disqueJob = new DisqueJob($mockQueue, $mockJob, $mockDoneLog);
 
         $this->assertTrue($disqueJob->markProcessing());
+    }
+
+    public function testProcessingFails()
+    {
+        $mockJob = $this->getMockBuilder(JobInterface::class)
+            ->getMock();
+
+        $mockQueue = $this->getMockBuilder(Queue::class)
+            ->setMethods(['processing'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $mockQueue->expects($this->once())
+            ->method('processing')
+            ->with($mockJob)
+            ->will($this->throwException(new ResponseException()));
+
+        $mockDoneLog = $this->getMockBuilder(DoneLogInterface::class)
+            ->getMockForAbstractClass();
+
+        $disqueJob = new DisqueJob($mockQueue, $mockJob, $mockDoneLog);
+
+        $this->assertFalse($disqueJob->markProcessing());
     }
 
     /**
@@ -44,7 +71,10 @@ class DisqueJobTest extends TestCase
             ->method('getBody')
             ->willReturn($output);
 
-        $disqueJob = new DisqueJob($mockQueue, $mockJob);
+        $mockDoneLog = $this->getMockBuilder(DoneLogInterface::class)
+            ->getMockForAbstractClass();
+
+        $disqueJob = new DisqueJob($mockQueue, $mockJob, $mockDoneLog);
 
         $this->assertEquals($expectedReturn, $disqueJob->getData());
     }
@@ -73,7 +103,10 @@ class DisqueJobTest extends TestCase
             ->method('processed')
             ->with($mockJob);
 
-        $disqueJob = new DisqueJob($mockQueue, $mockJob);
+        $mockDoneLog = $this->getMockBuilder(DoneLogInterface::class)
+            ->getMockForAbstractClass();
+
+        $disqueJob = new DisqueJob($mockQueue, $mockJob, $mockDoneLog);
 
         $this->assertTrue($disqueJob->markDone());
     }
@@ -92,9 +125,11 @@ class DisqueJobTest extends TestCase
             ->method('failed')
             ->with($mockJob);
 
-        $disqueJob = new DisqueJob($mockQueue, $mockJob);
+        $mockDoneLog = $this->getMockBuilder(DoneLogInterface::class)
+            ->getMockForAbstractClass();
+
+        $disqueJob = new DisqueJob($mockQueue, $mockJob, $mockDoneLog);
 
         $this->assertTrue($disqueJob->markFailed());
     }
-
 }

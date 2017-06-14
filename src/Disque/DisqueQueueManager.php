@@ -7,6 +7,7 @@ use Disque\Queue\Job;
 use Punchkick\QueueManager\Exception\EmptyQueueException;
 use Punchkick\QueueManager\JobInterface;
 use Punchkick\QueueManager\QueueManagerInterface;
+use Punchkick\QueueManager\DoneLog\DoneLogInterface;
 
 /**
  * Class DisqueQueueManager
@@ -20,12 +21,18 @@ class DisqueQueueManager implements QueueManagerInterface
     protected $client;
 
     /**
+     * @var DoneLogInterface
+     */
+    protected $doneLog;
+
+    /**
      * DisqueQueueManager constructor.
      * @param Client $client
      */
-    public function __construct(Client $client)
+    public function __construct(Client $client, DoneLogInterface $doneLog)
     {
         $this->client = $client;
+        $this->doneLog = $doneLog;
     }
 
     /**
@@ -54,12 +61,20 @@ class DisqueQueueManager implements QueueManagerInterface
     public function getJob(string $jobName): JobInterface
     {
         $queue = $this->client->queue($jobName);
-        $job = $queue->pull(1000); // 1 second
+        $disqueJob = $queue->pull(1000); // 1 second
 
-        if (!$job) {
+        if (!$disqueJob) {
             throw new EmptyQueueException;
         }
 
-        return new DisqueJob($queue, $job);
+        $job = new DisqueJob($queue, $disqueJob, $this->doneLog);
+
+        if ($this->doneLog->hasJob($disqueJob->getId())) {
+            $job->markDone();
+
+            throw new EmptyQueueException;
+        }
+
+        return $job;
     }
 }

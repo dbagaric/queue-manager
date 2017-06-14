@@ -6,6 +6,7 @@ use Disque\Connection\Response\ResponseException;
 use Disque\Queue\JobInterface as DisqueJobInterface;
 use Disque\Queue\Queue;
 use Punchkick\QueueManager\JobInterface;
+use Punchkick\QueueManager\DoneLog\DoneLogInterface;
 
 /**
  * Class DisqueJob
@@ -24,14 +25,23 @@ class DisqueJob implements JobInterface
     protected $job;
 
     /**
+     * @var DoneLogInterface
+     */
+    protected $doneLog;
+
+    /**
      * DisqueJob constructor.
      * @param Queue $queue
      * @param DisqueJobInterface $job
      */
-    public function __construct(Queue $queue, DisqueJobInterface $job)
-    {
+    public function __construct(
+        Queue $queue,
+        DisqueJobInterface $job,
+        DoneLogInterface $doneLog
+    ) {
         $this->queue = $queue;
         $this->job = $job;
+        $this->doneLog = $doneLog;
     }
 
     /**
@@ -41,14 +51,14 @@ class DisqueJob implements JobInterface
     {
         try {
             $this->queue->processing($this->job);
+
+            return true;
         } catch (ResponseException $e) {
             // this can occur if the job has already reach 50% TTL
             // it's a strange limitation of disque, but can be safely
             // ignored here
             return false;
         }
-
-        return true;
     }
 
     /**
@@ -72,6 +82,8 @@ class DisqueJob implements JobInterface
     {
         $this->queue->processed($this->job);
 
+        $this->doneLog->logJob($this->job->getId());
+
         return true;
     }
 
@@ -84,5 +96,4 @@ class DisqueJob implements JobInterface
 
         return true;
     }
-
 }

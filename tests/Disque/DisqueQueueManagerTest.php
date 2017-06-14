@@ -7,6 +7,7 @@ use Disque\Queue\Queue;
 use PHPUnit\Framework\TestCase;
 use Punchkick\QueueManager\Disque\DisqueQueueManager;
 use Punchkick\QueueManager\Exception\EmptyQueueException;
+use Punchkick\QueueManager\DoneLog\DoneLogInterface;
 
 class DisqueQueueManagerTest extends TestCase
 {
@@ -43,9 +44,17 @@ class DisqueQueueManagerTest extends TestCase
             ->getMock();
 
         $this->mockJob = $this->getMockBuilder(Job::class)
+            ->setMethods(['markDone'])
             ->getMock();
 
-        $this->disqueQueueManager = new DisqueQueueManager($this->mockClient);
+        $this->mockDoneLog = $this->getMockBuilder(DoneLogInterface::class)
+            ->setMethods(['hasJob'])
+            ->getMockForAbstractClass();
+
+        $this->disqueQueueManager = new DisqueQueueManager(
+            $this->mockClient,
+            $this->mockDoneLog
+        );
     }
 
     public function testAddJob()
@@ -64,7 +73,7 @@ class DisqueQueueManagerTest extends TestCase
             ->method('push')
             ->with($this->callback(function (Job $job) use ($jobData) {
                 return $job->getBody() === $jobData;
-            }), ['ttl' => 604800]);
+            }), ['ttl' => 604800, 'async' => true,]);
 
         $this->assertTrue($this->disqueQueueManager->addJob($jobName, $jobData));
     }
@@ -82,6 +91,32 @@ class DisqueQueueManagerTest extends TestCase
             ->method('pull')
             ->with(1000)
             ->willReturn(null);
+
+        $this->expectException(EmptyQueueException::class);
+        $this->disqueQueueManager->getJob($jobName);
+    }
+
+    public function testJobHasBeenDone()
+    {
+        $jobName = 'foo_bar';
+
+        $this->mockClient->expects($this->once())
+            ->method('queue')
+            ->with($jobName)
+            ->willReturn($this->mockQueue);
+
+        $this->mockQueue->expects($this->once())
+            ->method('pull')
+            ->with(1000)
+            ->willReturn($this->mockJob);
+
+        $this->mockJob->expects($this->once())
+            ->method('markDone')
+            ->willReturn(null);
+
+        $this->mockDoneLog->expects($this->once())
+            ->method('hasJob')
+            ->willReturn(true);
 
         $this->expectException(EmptyQueueException::class);
         $this->disqueQueueManager->getJob($jobName);

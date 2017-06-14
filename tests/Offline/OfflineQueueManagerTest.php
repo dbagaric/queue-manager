@@ -23,11 +23,21 @@ class OfflineQueueManagerTest extends TestCase
             {
                 assert($job->getData() === ['foo' => 'bar']);
 
-                return false;
+                return true;
             }
         };
 
         $offlineQueueManager = new OfflineQueueManager([$mockJobHandler]);
+
+        $this->assertTrue($offlineQueueManager->addJob($jobName, $jobData));
+    }
+
+    public function testDoesntAddJobIfNoHandler()
+    {
+        $jobName = 'foo_bar';
+        $jobData = ['foo' => 'bar'];
+
+        $offlineQueueManager = new OfflineQueueManager([]);
 
         $this->assertFalse($offlineQueueManager->addJob($jobName, $jobData));
     }
