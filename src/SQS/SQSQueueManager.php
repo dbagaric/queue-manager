@@ -111,7 +111,14 @@ class SQSQueueManager implements QueueManagerInterface
                 throw new EmptyQueueException();
             }
 
-            $job = new SQSJob($body);
+            $job = new SQSJob(
+                $body,
+                $this->client,
+                $this->baseUrl . $jobName . '_' . $this->env,
+                $messageData['ReceiptHandle'],
+                $this->doneLog,
+                $messageData['MessageId']
+            );
 
             if ($this->doneLog->hasJob($messageData['MessageId'])) {
                 $job->markDone();

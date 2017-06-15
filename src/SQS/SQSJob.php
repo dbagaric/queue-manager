@@ -1,8 +1,10 @@
 <?php
 namespace Punchkick\QueueManager\SQS;
 
+use Exception;
 use Punchkick\QueueManager\JobInterface;
 use Punchkick\QueueManager\DoneLog\DoneLogInterface;
+use Aws\Sqs\SqsClient;
 
 class SQSJob implements JobInterface
 {
@@ -12,6 +14,11 @@ class SQSJob implements JobInterface
     protected $data;
 
     /**
+     * @var SqsClient
+     */
+    protected $client;
+
+    /**
      * @var string
      */
     protected $queueUrl;
@@ -19,23 +26,32 @@ class SQSJob implements JobInterface
     /**
      * @var DoneLogInterface
      */
-    protected $queueUrl;
+    protected $doneLog;
 
     /**
      * @var string
      */
     protected $receiptHandle;
 
+    /**
+     * @var string
+     */
+    protected $messageId;
+
     public function __construct(
         array $data,
+        SqsClient $client,
         string $queueUrl,
         string $receiptHandle,
-        DoneLogInterface $doneLog
+        DoneLogInterface $doneLog,
+        string $messageId
     ) {
         $this->data = $data;
+        $this->client = $client;
         $this->queueUrl = $queueUrl;
         $this->receiptHandle = $receiptHandle;
         $this->doneLog = $doneLog;
+        $this->messageId = $messageId;
     }
 
     /**
@@ -61,12 +77,12 @@ class SQSJob implements JobInterface
     public function markDone(): bool
     {
         try {
-            $result = $client->deleteMessage([
+            $this->client->deleteMessage([
                 'QueueUrl' => $this->queueUrl,
                 'ReceiptHandle' => $this->receiptHandle,
             ]);
 
-            $this->doneLog->logJob($this->job->getId());
+            $this->doneLog->logJob($this->messageId);
 
             return true;
         } catch (Exception $e) {
