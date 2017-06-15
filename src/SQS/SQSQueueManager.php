@@ -52,20 +52,10 @@ class SQSQueueManager implements QueueManagerInterface
         int $waitSeconds
     ) {
         $this->client = $client;
+        $this->doneLog = $doneLog;
         $this->baseUrl = $baseUrl;
+        $this->env = $env;
         $this->waitSeconds = $waitSeconds;
-
-        switch ($env) {
-            case 'cat':
-                $this->env = 'cat';
-                break;
-            case 'master':
-                $this->env = 'prod';
-                break;
-            default:
-                $this->env = 'dev';
-                break;
-        }
     }
 
     /**
