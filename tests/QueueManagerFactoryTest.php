@@ -5,8 +5,11 @@ use PHPUnit\Framework\Error\Notice;
 use PHPUnit\Framework\Error\Warning;
 use PHPUnit\Framework\TestCase;
 use Punchkick\QueueManager\Exception\BadConnectionException;
+use Punchkick\QueueManager\Exception\InvalidArgumentException;
 use Punchkick\QueueManager\Exception\InvalidTypeException;
 use Punchkick\QueueManager\Offline\OfflineQueueManager;
+use Punchkick\QueueManager\QueueManagerInterface;
+use Punchkick\QueueManager\QueueManagerFactory;
 
 class QueueManagerFactoryTest extends TestCase
 {
@@ -38,6 +41,58 @@ class QueueManagerFactoryTest extends TestCase
             'host' => '127.0.0.1',
             'port' => 7711
         ]);
+    }
+
+    /**
+     * @dataProvider failsWithInvalidDisqueCredsDataProvider
+     */
+    public function testFailsWithInvalidDisqueCreds($creds) {
+        $this->expectException(InvalidArgumentException::class);
+
+        $queueManagerFactory = new QueueManagerFactory();
+        $queueManagerFactory->make(QueueManagerFactory::TYPE_SQS, $creds);
+    }
+
+    public function failsWithInvalidDisqueCredsDataProvider()
+    {
+        return [
+            [[]],
+            [['host' => 'something']],
+            [['port' => 200]],
+        ];
+    }
+
+    /**
+     * @dataProvider failsWithInvalidSQSCredsDataProvider
+     */
+    public function testFailsWithInvalidSQSCreds($creds) {
+        $this->expectException(InvalidArgumentException::class);
+
+        $queueManagerFactory = new QueueManagerFactory();
+        $queueManagerFactory->make(QueueManagerFactory::TYPE_DISQUE, $creds);
+    }
+
+    public function failsWithInvalidSQSCredsDataProvider()
+    {
+        return [
+            [[]],
+            [['profile' => 'a', 'region' => 'a', 'baseUrl' => 'a']],
+            [['profile' => 'a', 'region' => 'a', 'env' => 'a']],
+            [['profile' => 'a', 'baseUrl' => 'a', 'env' => 'a']],
+            [['region' => 'a', 'baseUrl' => 'a', 'env' => 'a']],
+            [['profile' => '', 'region' => 'a', 'baseUrl' => 'a', 'env' => 'a']],
+        ];
+    }
+
+    public function testReturnsSQSQueueManager()
+    {
+        $queueManagerFactory = new QueueManagerFactory();
+        $queueManager = $queueManagerFactory->make(
+            QueueManagerFactory::TYPE_SQS,
+            ['profile' => 'a', 'region' => 'a', 'baseUrl' => 'a', 'env' => 'a']
+        );
+
+        $this->assertInstanceOf(QueueManagerInterface::class, $queueManager);
     }
 
     public function testFallsbackToOffline()

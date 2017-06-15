@@ -3,11 +3,13 @@
 namespace Punchkick\QueueManager;
 
 use Exception;
+use Aws\Sqs\SqsClient;
 use Disque\Client;
 use Disque\Connection\ConnectionException;
 use Disque\Connection\Credentials;
 use Punchkick\QueueManager\Disque\DisqueQueueManager;
 use Punchkick\QueueManager\Exception\BadConnectionException;
+use Punchkick\QueueManager\Exception\InvalidArgumentException;
 use Punchkick\QueueManager\Exception\InvalidTypeException;
 use Punchkick\QueueManager\Offline\OfflineQueueManager;
 use Punchkick\QueueManager\SQS\SQSQueueManager;

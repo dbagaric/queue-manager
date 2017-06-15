@@ -39,8 +39,8 @@ class DisqueQueueManagerTest extends TestCase
             ->getMock();
 
         $this->mockQueue = $this->getMockBuilder(Queue::class)
+            ->setMethods(['push', 'pull', 'processed'])
             ->disableOriginalConstructor()
-            ->setMethods(['push', 'pull'])
             ->getMock();
 
         $this->mockJob = $this->getMockBuilder(Job::class)
@@ -109,9 +109,9 @@ class DisqueQueueManagerTest extends TestCase
             ->method('pull')
             ->with(1000)
             ->willReturn($this->mockJob);
-
-        $this->mockJob->expects($this->once())
-            ->method('markDone')
+        $this->mockQueue->expects($this->once())
+            ->method('processed')
+            ->with($this->mockJob)
             ->willReturn(null);
 
         $this->mockDoneLog->expects($this->once())
