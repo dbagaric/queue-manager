@@ -94,6 +94,10 @@ class SQSQueueManager implements QueueManagerInterface
             throw new EmptyQueueException();
         }
 
+        if (empty($result->getPath('Messages'))) {
+            throw new EmptyQueueException();
+        }
+
         foreach ($result->getPath('Messages') as $messageData) {
             $body = json_decode($messageData['Body'], true);
 
