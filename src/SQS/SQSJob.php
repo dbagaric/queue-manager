@@ -59,7 +59,7 @@ class SQSJob implements JobInterface
      */
     public function markProcessing(): bool
     {
-        // no need, the item won't be given to anyone else for 30 seconds
+        // no need; the message won't be given to anyone else for 30 seconds
         return true;
     }
 
@@ -76,18 +76,14 @@ class SQSJob implements JobInterface
      */
     public function markDone(): bool
     {
-        try {
-            $this->client->deleteMessage([
-                'QueueUrl' => $this->queueUrl,
-                'ReceiptHandle' => $this->receiptHandle,
-            ]);
+        $result = $this->client->deleteMessage([
+            'QueueUrl' => $this->queueUrl,
+            'ReceiptHandle' => $this->receiptHandle,
+        ]);
 
-            $this->doneLog->logJob($this->messageId);
+        $this->doneLog->logJob($this->messageId);
 
-            return true;
-        } catch (Exception $e) {
-            return false;
-        }
+        return $result['@metadata']['statusCode'] === 200;
     }
 
     /**

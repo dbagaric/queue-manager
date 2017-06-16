@@ -9,7 +9,6 @@ use Aws\Sqs\SqsClient;
 use Exception;
 use Psr\Log\LoggerInterface;
 
-
 class SQSQueueManager implements QueueManagerInterface
 {
     /**
@@ -67,7 +66,7 @@ class SQSQueueManager implements QueueManagerInterface
     {
         try {
             $result = $this->client->sendMessage([
-                'QueueUrl' => $this->baseUrl . $jobName . '_' . $this->env,
+                'QueueUrl' => $this->getQueueUrlForJobName($jobName),
                 'MessageBody' => json_encode($jobData),
             ]);
 
@@ -84,15 +83,11 @@ class SQSQueueManager implements QueueManagerInterface
      **/
     public function getJob(string $jobName): JobInterface
     {
-        try {
-            $result = $this->client->receiveMessage([
-                'QueueUrl' => $this->baseUrl . $jobName . '_' . $this->env,
-                'WaitTimeSeconds' => $this->waitSeconds,
-                'MaxNumberOfMessages' => 1
-            ]);
-        } catch (Exception $e) {
-            throw new EmptyQueueException();
-        }
+        $result = $this->client->receiveMessage([
+            'QueueUrl' => $this->getQueueUrlForJobName($jobName),
+            'WaitTimeSeconds' => $this->waitSeconds,
+            'MaxNumberOfMessages' => 1
+        ]);
 
         if (empty($result->getPath('Messages'))) {
             throw new EmptyQueueException();
@@ -101,20 +96,23 @@ class SQSQueueManager implements QueueManagerInterface
         foreach ($result->getPath('Messages') as $messageData) {
             $body = json_decode($messageData['Body'], true);
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new EmptyQueueException();
+            if ($this->wasJsonError()) {
+                $body = [];
             }
 
             $job = new SQSJob(
                 $body,
                 $this->client,
-                $this->baseUrl . $jobName . '_' . $this->env,
+                $this->getQueueUrlForJobName($jobName),
                 $messageData['ReceiptHandle'],
                 $this->doneLog,
                 $messageData['MessageId']
             );
 
-            if ($this->doneLog->hasJob($messageData['MessageId'])) {
+            if (
+                $this->wasJsonError()
+                || $this->doneLog->hasJob($messageData['MessageId'])
+            ) {
                 $job->markDone();
 
                 throw new EmptyQueueException();
@@ -122,5 +120,22 @@ class SQSQueueManager implements QueueManagerInterface
 
             return $job;
         }
+    }
+
+    /**
+     * @param string $jobName
+     * @return string
+     */
+    private function getQueueUrlForJobName(string $jobName): string
+    {
+        return $this->baseUrl . $jobName . '_' . $this->env;
+    }
+
+    /**
+     * @return bool
+     */
+    private function wasJsonError(): bool
+    {
+        return json_last_error() !== JSON_ERROR_NONE;
     }
 }
