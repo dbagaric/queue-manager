@@ -154,7 +154,7 @@ class QueueManagerFactory
             $doneLog,
             $settings['baseUrl'],
             $settings['env'],
-            !empty($settings['waitSeconds'])? $settings['waitSeconds']: 5
+            isset($settings['waitSeconds'])? (int)$settings['waitSeconds']: 5
         );
     }
 
