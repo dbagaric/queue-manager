@@ -1,6 +1,8 @@
 <?php
 namespace Punchkick\QueueManager\SQS;
 
+use Aws\Sqs\Exception\SqsException;
+use Punchkick\QueueManager\Exception\QueueServerErrorException;
 use Punchkick\QueueManager\JobInterface;
 use Punchkick\QueueManager\QueueManagerInterface;
 use Punchkick\QueueManager\Exception\EmptyQueueException;
@@ -58,6 +60,86 @@ class SQSQueueManager implements QueueManagerInterface
     }
 
     /**
+     * @return SqsClient
+     */
+    public function getClient(): SqsClient
+    {
+        return $this->client;
+    }
+
+    /**
+     * @param SqsClient $client
+     */
+    public function setClient(SqsClient $client)
+    {
+        $this->client = $client;
+    }
+
+    /**
+     * @return DoneLogInterface
+     */
+    public function getDoneLog(): DoneLogInterface
+    {
+        return $this->doneLog;
+    }
+
+    /**
+     * @param DoneLogInterface $doneLog
+     */
+    public function setDoneLog(DoneLogInterface $doneLog)
+    {
+        $this->doneLog = $doneLog;
+    }
+
+    /**
+     * @return string
+     */
+    public function getEnv(): string
+    {
+        return $this->env;
+    }
+
+    /**
+     * @param string $env
+     */
+    public function setEnv(string $env)
+    {
+        $this->env = $env;
+    }
+
+    /**
+     * @return string
+     */
+    public function getBaseUrl(): string
+    {
+        return $this->baseUrl;
+    }
+
+    /**
+     * @param string $baseUrl
+     */
+    public function setBaseUrl(string $baseUrl)
+    {
+        $this->baseUrl = $baseUrl;
+    }
+
+    /**
+     * @return int
+     */
+    public function getWaitSeconds(): int
+    {
+        return $this->waitSeconds;
+    }
+
+    /**
+     * @param int $waitSeconds
+     */
+    public function setWaitSeconds(int $waitSeconds)
+    {
+        $this->waitSeconds = $waitSeconds;
+    }
+
+    /**
      * @param string $jobName
      * @param array $jobData
      * @return bool
@@ -80,14 +162,19 @@ class SQSQueueManager implements QueueManagerInterface
      * @param string $jobName
      * @return JobInterface
      * @throws EmptyQueueException
+     * @throws QueueServerErrorException
      **/
     public function getJob(string $jobName): JobInterface
     {
-        $result = $this->client->receiveMessage([
-            'QueueUrl' => $this->getQueueUrlForJobName($jobName),
-            'WaitTimeSeconds' => $this->waitSeconds,
-            'MaxNumberOfMessages' => 1
-        ]);
+        try {
+            $result = $this->client->receiveMessage([
+                'QueueUrl' => $this->getQueueUrlForJobName($jobName),
+                'WaitTimeSeconds' => $this->waitSeconds,
+                'MaxNumberOfMessages' => 1
+            ]);
+        } catch (SqsException $e) {
+            throw new QueueServerErrorException('Unable to send request to receive message', $e->getCode(), $e);
+        }
 
         if (empty($result->getPath('Messages'))) {
             throw new EmptyQueueException();

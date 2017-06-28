@@ -1,15 +1,14 @@
 <?php
+
 namespace Punchkick\QueueManager;
 
-use PHPUnit\Framework\Error\Notice;
 use PHPUnit\Framework\Error\Warning;
 use PHPUnit\Framework\TestCase;
 use Punchkick\QueueManager\Exception\BadConnectionException;
 use Punchkick\QueueManager\Exception\InvalidArgumentException;
 use Punchkick\QueueManager\Exception\InvalidTypeException;
 use Punchkick\QueueManager\Offline\OfflineQueueManager;
-use Punchkick\QueueManager\QueueManagerInterface;
-use Punchkick\QueueManager\QueueManagerFactory;
+use Punchkick\QueueManager\SQS\SQSQueueManager;
 
 class QueueManagerFactoryTest extends TestCase
 {
@@ -46,7 +45,8 @@ class QueueManagerFactoryTest extends TestCase
     /**
      * @dataProvider failsWithInvalidDisqueCredsDataProvider
      */
-    public function testFailsWithInvalidDisqueCreds($creds) {
+    public function testFailsWithInvalidDisqueCreds($creds)
+    {
         $this->expectException(InvalidArgumentException::class);
 
         $queueManagerFactory = new QueueManagerFactory();
@@ -65,7 +65,8 @@ class QueueManagerFactoryTest extends TestCase
     /**
      * @dataProvider failsWithInvalidSQSCredsDataProvider
      */
-    public function testFailsWithInvalidSQSCreds($creds) {
+    public function testFailsWithInvalidSQSCreds($creds)
+    {
         $this->expectException(InvalidArgumentException::class);
 
         $queueManagerFactory = new QueueManagerFactory();
@@ -93,6 +94,21 @@ class QueueManagerFactoryTest extends TestCase
         );
 
         $this->assertInstanceOf(QueueManagerInterface::class, $queueManager);
+    }
+
+    public function testSQSTakesProperSettings()
+    {
+        $queueManagerFactory = new QueueManagerFactory();
+        /** @var SQSQueueManager $queueManager */
+        $queueManager = $queueManagerFactory->make(
+            QueueManagerFactory::TYPE_SQS,
+            ['profile' => 'a', 'region' => 'b', 'baseUrl' => 'c', 'env' => 'd', 'waitSeconds' => 10]
+        );
+
+        $this->assertInstanceOf(SQSQueueManager::class, $queueManager);
+        $this->assertSame('c', $queueManager->getBaseUrl());
+        $this->assertSame('d', $queueManager->getEnv());
+        $this->assertSame(10, $queueManager->getWaitSeconds());
     }
 
     public function testFallsbackToOffline()
@@ -124,7 +140,7 @@ class QueueManagerFactoryTest extends TestCase
 
         $this->expectException(BadConnectionException::class);
         $queueManagerFactory = new QueueManagerFactory();
-        $offlineQueueManager = $queueManagerFactory->make(
+        $queueManagerFactory->make(
             QueueManagerFactory::TYPE_DISQUE,
             [
                 'host' => '127.0.0.1',
@@ -135,4 +151,5 @@ class QueueManagerFactoryTest extends TestCase
 
         error_reporting($oldErrorReporting);
     }
+
 }

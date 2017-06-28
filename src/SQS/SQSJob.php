@@ -76,14 +76,18 @@ class SQSJob implements JobInterface
      */
     public function markDone(): bool
     {
-        $result = $this->client->deleteMessage([
-            'QueueUrl' => $this->queueUrl,
-            'ReceiptHandle' => $this->receiptHandle,
-        ]);
+        try {
+            $result = $this->client->deleteMessage([
+                'QueueUrl' => $this->queueUrl,
+                'ReceiptHandle' => $this->receiptHandle,
+            ]);
 
-        $this->doneLog->logJob($this->messageId);
+            $this->doneLog->logJob($this->messageId);
 
-        return $result['@metadata']['statusCode'] === 200;
+            return $result['@metadata']['statusCode'] === 200;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
     /**

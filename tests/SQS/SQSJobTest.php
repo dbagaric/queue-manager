@@ -46,7 +46,11 @@ class SQSJobTest extends TestCase
                 'QueueUrl' => 'abc',
                 'ReceiptHandle' => '123',
             ])
-            ->will($this->returnValue(true));
+            ->will($this->returnValue([
+                '@metadata' => [
+                    'statusCode' => 200
+                ]
+            ]));
 
         $this->mockDoneLog->expects($this->once())
             ->method('logJob')

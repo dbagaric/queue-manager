@@ -41,8 +41,9 @@ class QueueManagerFactory
 
     /**
      * @param int $queueType
-     * @param bool $offlineFallback
+     * @param array $settings
      * @param DoneLogInterface|null $doneLog
+     * @param bool $offlineFallback
      * @return QueueManagerInterface
      * @throws BadConnectionException
      */
@@ -99,6 +100,7 @@ class QueueManagerFactory
     }
 
     /**
+     * @param DoneLogInterface $doneLog
      * @param array $settings
      * @return DisqueQueueManager
      * @throws BadConnectionException
@@ -119,14 +121,20 @@ class QueueManagerFactory
             throw new BadConnectionException('Could not connect to Disque server', 0, $e);
         }
 
-        return new DisqueQueueManager($client);
+        return new DisqueQueueManager($client, $doneLog);
     }
 
     /**
+     * @param DoneLogInterface $doneLog
      * @param array $settings
      * @return SQSQueueManager
+     * @throws InvalidArgumentException
+     * @throws BadConnectionException
      */
-    protected function getSqsQueueManager(DoneLogInterface $doneLog, array $settings): SQSQueueManager
+    protected function getSqsQueueManager(
+        DoneLogInterface $doneLog,
+        array $settings
+    ): SQSQueueManager
     {
         if (
             empty($settings['profile'])
