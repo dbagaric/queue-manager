@@ -42,20 +42,9 @@ class QueueManagerFactoryTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider failsWithInvalidSQSCredsDataProvider
-     */
-    public function testFailsWithInvalidSQSCreds($creds)
+    public function testFailsWithInvalidSQSCreds()
     {
-        $this->expectException(InvalidArgumentException::class);
-
-        $queueManagerFactory = new QueueManagerFactory();
-        $queueManagerFactory->make(QueueManagerFactory::TYPE_SQS, $creds);
-    }
-
-    public function failsWithInvalidSQSCredsDataProvider()
-    {
-        return [
+        $data = [
             [[]],
             [['profile' => 'a', 'region' => 'a', 'baseUrl' => 'a']],
             [['profile' => 'a', 'region' => 'a', 'env' => 'a']],
@@ -63,6 +52,13 @@ class QueueManagerFactoryTest extends TestCase
             [['region' => 'a', 'baseUrl' => 'a', 'env' => 'a']],
             [['profile' => '', 'region' => 'a', 'baseUrl' => 'a', 'env' => 'a']],
         ];
+
+        foreach ($data as $creds) {
+            $this->expectException(InvalidArgumentException::class);
+
+            $queueManagerFactory = new QueueManagerFactory();
+            $queueManagerFactory->make(QueueManagerFactory::TYPE_SQS, $creds);
+        }
     }
 
     public function testReturnsSQSQueueManager()
