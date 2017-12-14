@@ -60,7 +60,7 @@ class QueueManagerFactory
 
         if ($queueType === self::TYPE_SQS) {
             return $this->getSqsQueueManager($doneLog, $settings);
-        } else if ($queueType === self::TYPE_OFFLINE) {
+        } elseif ($queueType === self::TYPE_OFFLINE) {
             return $this->getOfflineQueueManager();
         } else {
             throw new InvalidTypeException(sprintf('Queue type "%s" is not supported', $queueType));

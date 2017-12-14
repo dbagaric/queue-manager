@@ -56,5 +56,4 @@ class OfflineJob implements JobInterface
     {
         return true;
     }
-
 }

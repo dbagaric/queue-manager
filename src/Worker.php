@@ -80,5 +80,4 @@ class Worker
         } catch (EmptyQueueException $e) {
         }
     }
-
 }
