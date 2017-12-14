@@ -3,4 +3,4 @@ language: php71
 build:
     - "composer install -ovn"
     - "./vendor/bin/phpunit"
-    - "./vendor/bin/phpcs --standard=PSR2"
+    - "./vendor/bin/phpcs --standard=PSR2 src/"
