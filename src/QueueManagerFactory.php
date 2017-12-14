@@ -45,7 +45,6 @@ class QueueManagerFactory
      * @param int $queueType
      * @param array $settings
      * @param DoneLogInterface|null $doneLog
-     * @param bool $offlineFallback
      *
      * @return QueueManagerInterface
      */

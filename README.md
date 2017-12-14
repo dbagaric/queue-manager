@@ -6,7 +6,7 @@ Provides a simple interface to handle different types of queues, without couplin
 
 ## Currently Supported Queues
 
-* Disque
+* Amazon SQS
 * Offline (Synchronous)
 
 ## Installation
@@ -69,8 +69,7 @@ class YourJobHandler implements JobHandlerInterface
 
 ### Create an Instance of QueueManagerFactory
 
-The Factory will provide you an instance of your chosen queue type and can 
-fallback to "offline mode" if it has trouble connecting. The OfflineQueueManager 
+The Factory will provide you an instance of your chosen queue type. The OfflineQueueManager 
 will simply execute the job immediately if the queue is not available. This is 
 useful for testing in environments where you don't have access to a queue 
 server.
@@ -111,33 +110,45 @@ $queueManager->addJobHandler(new YourJobHandler());
 
 ### Getting an Instance of QueueManagerInterface
 
-The make method accepts the type of queue you are requesting, the host of the 
-queue server, and the port of the queue server.
+The make method accepts the type of queue you are requesting and 
+an array with the settings to pass to the queue's client.
 
 ```php
 /** @var QueueManagerInterface $queueManager */
 $queueManager = $queueManagerFactory->make(
-    QueueManagerFactory::TYPE_DISQUE, 
-    '127.0.0.1', 
-    7711
+    QueueManagerFactory::TYPE_DISQUE, // or QueueManagerFactory::TYPE_OFFLINE
+    $settings
 );
 ```
 
-#### Disable the Offline Fallback
+### Adding a "done log"
 
-You can disable the offline fallback by passing `false` as the fourth parameter 
-to `make`. If you do that, and the connection fails, `make` will throw a 
-`\Punchkick\QueueManager\Exception\BadConnectionException`.
+As a backup to prevent jobs from being processed more than once, you can provide
+an instance of DoneLogInterface and create your own log of the completed jobs 
+elsewhere, whether that be in a database or a flat file.
 
 ```php
-/** @var QueueManagerInterface $queueManager */
+
+class SomeDoneLog implements \Punchkick\QueueManager\DoneLog\DoneLogInterface
+{
+    public function logJob($id): bool
+    {
+        return true; // if the job has been successfully logged
+    }
+
+    public function hasJob($id): bool
+    {
+        return true; // if the job has already been processed
+    }
+}
+
 $queueManager = $queueManagerFactory->make(
-    QueueManagerFactory::TYPE_DISQUE, 
-    '127.0.0.1', 
-    7711, 
-    false
+    QueueManagerFactory::TYPE_DISQUE, // or QueueManagerFactory::TYPE_OFFLINE
+    $settings,
+    new SomeDoneLog()
 );
 ```
+
 
 ### Queuing Jobs
 
@@ -148,6 +159,16 @@ be deleted from the queue. The TTL is a requirement of Disque.
 
 ```php
 $queueManager->addJob(YourJobHandler::getJobName(), ['your_key' => 'your_val']);
+```
+
+
+### Purging a Queue
+
+If you want to remove all jobs with a given name, use the `purgeJobs` method.
+It will return true if the jobs have successfully been purged.
+
+```php
+$queueManager->purgeJobs(YourJobHandler::getJobName());
 ```
 
 
@@ -165,10 +186,8 @@ $queueManagerFactory = new Punchkick\QueueManager\QueueManagerFactory([
     new YourOtherJobHandler()
 ]);
 $queueManager = $quemanagerFactory->make(
-    Punchkick\QueueManager\QueueManagerFactory::TYPE_DISQUE, 
-    '127.0.0.1', 
-    7711, 
-    false
+    Punchkick\QueueManager\QueueManagerFactory::TYPE_SQS, 
+    $settings
 );
 $worker = new Worker($queueManager);
 ```
