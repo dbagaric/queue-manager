@@ -3,8 +3,7 @@
     "description": "a simple interface to handle different types of queues",
     "type": "library",
     "require": {
-        "php": "^7.0",
-        "mariano/disque-php": "^2.0",
+        "php": "^7.1",
         "aws/aws-sdk-php": "^3.29"
     },
     "require-dev": {
