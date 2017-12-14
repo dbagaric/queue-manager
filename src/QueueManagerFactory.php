@@ -102,8 +102,7 @@ class QueueManagerFactory
         DoneLogInterface $doneLog,
         array $settings
     ): SQSQueueManager {
-        if (
-            empty($settings['profile'])
+        if (empty($settings['profile'])
             || empty($settings['region'])
             || empty($settings['baseUrl'])
             || empty($settings['env'])

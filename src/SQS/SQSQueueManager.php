@@ -311,10 +311,7 @@ class SQSQueueManager implements QueueManagerInterface
      */
     private function verifyMessage(array $messageData, JobInterface $job): void
     {
-        if (
-            $this->wasJsonError()
-            || $this->doneLog->hasJob($messageData['MessageId'])
-        ) {
+        if ($this->wasJsonError() || $this->doneLog->hasJob($messageData['MessageId'])) {
             $job->markDone();
 
             throw new EmptyQueueException();
