@@ -37,6 +37,11 @@ $fooBarQueueManager = new class implements QueueManagerInterface
         assert($jobName === 'foo_bar');
         throw new EmptyQueueException();
     }
+
+    public function purgeJobs(string $jobName): bool
+    {
+        return false;
+    }
 };
 
 $worker = new Worker(

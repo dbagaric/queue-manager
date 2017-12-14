@@ -2,19 +2,13 @@
 
 namespace Punchkick\QueueManager;
 
-use Exception;
 use Aws\Sqs\SqsClient;
-use Disque\Client;
-use Disque\Connection\ConnectionException;
-use Disque\Connection\Credentials;
-use Punchkick\QueueManager\Disque\DisqueQueueManager;
-use Punchkick\QueueManager\Exception\BadConnectionException;
+use Punchkick\QueueManager\DoneLog\DoneLogInterface;
+use Punchkick\QueueManager\DoneLog\NullDoneLog;
 use Punchkick\QueueManager\Exception\InvalidArgumentException;
 use Punchkick\QueueManager\Exception\InvalidTypeException;
 use Punchkick\QueueManager\Offline\OfflineQueueManager;
 use Punchkick\QueueManager\SQS\SQSQueueManager;
-use Punchkick\QueueManager\DoneLog\NullDoneLog;
-use Punchkick\QueueManager\DoneLog\DoneLogInterface;
 
 /**
  * Class QueueManagerFactory
@@ -22,8 +16,15 @@ use Punchkick\QueueManager\DoneLog\DoneLogInterface;
  */
 class QueueManagerFactory
 {
-    const TYPE_DISQUE = 1;
+    /**
+     * @var int
+     */
     const TYPE_SQS = 2;
+
+    /**
+     * @var int
+     */
+    const TYPE_OFFLINE = 3;
 
     /**
      * @var JobHandlerInterface[]
@@ -32,6 +33,7 @@ class QueueManagerFactory
 
     /**
      * QueueManagerFactory constructor.
+     *
      * @param JobHandlerInterface[] $jobHandlers
      */
     public function __construct(array $jobHandlers = [])
@@ -44,34 +46,24 @@ class QueueManagerFactory
      * @param array $settings
      * @param DoneLogInterface|null $doneLog
      * @param bool $offlineFallback
+     *
      * @return QueueManagerInterface
-     * @throws BadConnectionException
      */
     public function make(
         int $queueType,
-        array $settings,
-        DoneLogInterface $doneLog = null,
-        bool $offlineFallback = false
+        array $settings = [],
+        DoneLogInterface $doneLog = null
     ): QueueManagerInterface {
-
         if (!$doneLog) {
             $doneLog = new NullDoneLog();
         }
 
-        try {
-            if ($queueType === self::TYPE_DISQUE) {
-                return $this->getDisqueQueueManager($doneLog, $settings);
-            } elseif ($queueType === self::TYPE_SQS) {
-                return $this->getSqsQueueManager($doneLog, $settings);
-            } else {
-                throw new InvalidTypeException(sprintf('Queue type "%s" is not supported', $queueType));
-            }
-        } catch (BadConnectionException $e) {
-            if ($offlineFallback) {
-                return $this->getOfflineQueueManager();
-            } else {
-                throw $e;
-            }
+        if ($queueType === self::TYPE_SQS) {
+            return $this->getSqsQueueManager($doneLog, $settings);
+        } else if ($queueType === self::TYPE_OFFLINE) {
+            return $this->getOfflineQueueManager();
+        } else {
+            throw new InvalidTypeException(sprintf('Queue type "%s" is not supported', $queueType));
         }
     }
 
@@ -102,40 +94,14 @@ class QueueManagerFactory
     /**
      * @param DoneLogInterface $doneLog
      * @param array $settings
-     * @return DisqueQueueManager
-     * @throws BadConnectionException
-     */
-    protected function getDisqueQueueManager(DoneLogInterface $doneLog, array $settings): DisqueQueueManager
-    {
-        if (empty($settings['host']) || empty($settings['port'])) {
-            throw new InvalidArgumentException('Please set host and port to Disque server.');
-        }
-
-        $client = new Client([
-            new Credentials($settings['host'], $settings['port'])
-        ]);
-
-        try {
-            $client->connect();
-        } catch (ConnectionException $e) {
-            throw new BadConnectionException('Could not connect to Disque server', 0, $e);
-        }
-
-        return new DisqueQueueManager($client, $doneLog);
-    }
-
-    /**
-     * @param DoneLogInterface $doneLog
-     * @param array $settings
+     *
      * @return SQSQueueManager
      * @throws InvalidArgumentException
-     * @throws BadConnectionException
      */
     protected function getSqsQueueManager(
         DoneLogInterface $doneLog,
         array $settings
-    ): SQSQueueManager
-    {
+    ): SQSQueueManager {
         if (
             empty($settings['profile'])
             || empty($settings['region'])
@@ -147,22 +113,18 @@ class QueueManagerFactory
             );
         }
 
-        try {
-            $sqsClient = SqsClient::factory([
-                'profile' => $settings['profile'],
-                'region'  => $settings['region'],
-                'version' => '2012-11-05',
-            ]);
-        } catch (Exception $e) {
-            throw new BadConnectionException('Could not connect to SQS', 0, $e);
-        }
-
         return new SQSQueueManager(
-            $sqsClient,
+            new SqsClient(
+                [
+                    'profile' => $settings['profile'],
+                    'region'  => $settings['region'],
+                    'version' => '2012-11-05',
+                ]
+            ),
             $doneLog,
             $settings['baseUrl'],
             $settings['env'],
-            isset($settings['waitSeconds'])? (int)$settings['waitSeconds']: 5
+            isset($settings['waitSeconds']) ? (int)$settings['waitSeconds'] : 5
         );
     }
 

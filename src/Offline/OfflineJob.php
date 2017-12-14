@@ -17,6 +17,7 @@ class OfflineJob implements JobInterface
 
     /**
      * OfflineJob constructor.
+     *
      * @param array $data
      */
     public function __construct(array $data)

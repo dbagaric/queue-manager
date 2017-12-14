@@ -2,8 +2,6 @@
 
 namespace Punchkick\QueueManager;
 
-use Punchkick\QueueManager\JobInterface;
-
 /**
  * Interface JobHandlerInterface
  * @package Punchkick\QueueManager\JobHandler
@@ -17,6 +15,7 @@ interface JobHandlerInterface
 
     /**
      * @param JobInterface $job
+     *
      * @return bool
      */
     public function handle(JobInterface $job): bool;

@@ -49,4 +49,12 @@ class OfflineQueueManagerTest extends TestCase
         $offlineQueueManager = new OfflineQueueManager([]);
         $offlineQueueManager->getJob('some_job');
     }
+
+    public function testPurgeQueue()
+    {
+        $this->expectException(BadMethodCallException::class);
+
+        $offlineQueueManager = new OfflineQueueManager([]);
+        $offlineQueueManager->purgeJobs('some_job');
+    }
 }

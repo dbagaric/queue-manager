@@ -1,16 +1,21 @@
 <?php
+
 namespace Punchkick\QueueManager\SQS;
 
+use Aws\Result;
 use Aws\Sqs\Exception\SqsException;
+use Aws\Sqs\SqsClient;
+use Psr\Log\LoggerInterface;
+use Punchkick\QueueManager\DoneLog\DoneLogInterface;
+use Punchkick\QueueManager\Exception\EmptyQueueException;
 use Punchkick\QueueManager\Exception\QueueServerErrorException;
 use Punchkick\QueueManager\JobInterface;
 use Punchkick\QueueManager\QueueManagerInterface;
-use Punchkick\QueueManager\Exception\EmptyQueueException;
-use Punchkick\QueueManager\DoneLog\DoneLogInterface;
-use Aws\Sqs\SqsClient;
-use Exception;
-use Psr\Log\LoggerInterface;
 
+/**
+ * Class SQSQueueManager
+ * @package Punchkick\QueueManager\SQS
+ */
 class SQSQueueManager implements QueueManagerInterface
 {
     /**
@@ -39,24 +44,32 @@ class SQSQueueManager implements QueueManagerInterface
     private $waitSeconds;
 
     /**
+     * @var int|null
+     */
+    private $delaySeconds;
+
+    /**
      * @param SqsClient $client
      * @param DoneLogInterface $doneLog
      * @param string $baseUrl
      * @param string $env
      * @param int $waitSeconds
+     * @param int|null $delaySeconds
      */
     public function __construct(
         SqsClient $client,
         DoneLogInterface $doneLog,
         string $baseUrl,
         string $env,
-        int $waitSeconds
+        int $waitSeconds,
+        int $delaySeconds = null
     ) {
         $this->client = $client;
         $this->doneLog = $doneLog;
         $this->baseUrl = $baseUrl;
         $this->env = $env;
         $this->waitSeconds = $waitSeconds;
+        $this->delaySeconds = $delaySeconds;
     }
 
     /**
@@ -140,77 +153,101 @@ class SQSQueueManager implements QueueManagerInterface
     }
 
     /**
-     * @param string $jobName
-     * @param array $jobData
-     * @return bool
+     * @return int|null
      */
-    public function addJob(string $jobName, array $jobData): bool
+    public function getDelaySeconds(): ?int
     {
-        try {
-            $result = $this->client->sendMessage([
-                'QueueUrl' => $this->getQueueUrlForJobName($jobName),
-                'MessageBody' => json_encode($jobData),
-            ]);
+        return $this->delaySeconds;
+    }
 
-            return !empty($result['MD5OfMessageBody']);
-        } catch (Exception $e) {
-            return false;
-        }
+    /**
+     * @param int|null $delaySeconds
+     */
+    public function setDelaySeconds(?int $delaySeconds)
+    {
+        $this->delaySeconds = $delaySeconds;
     }
 
     /**
      * @param string $jobName
+     * @param array $jobData
+     *
+     * @return bool
+     * @throws QueueServerErrorException
+     */
+    public function addJob(string $jobName, array $jobData): bool
+    {
+        $messageData = [
+            'QueueUrl'    => $this->getQueueUrlForJobName($jobName),
+            'MessageBody' => json_encode($jobData),
+        ];
+
+        if (!is_null($this->delaySeconds)) {
+            $messageData['DelaySeconds'] = $this->delaySeconds;
+        }
+
+        try {
+            $result = $this->client->sendMessage($messageData);
+        } catch (SqsException $e) {
+            throw new QueueServerErrorException('Failed to add job to queue', $e->getCode(), $e);
+        }
+
+        return !empty($result['MD5OfMessageBody']);
+    }
+
+    /**
+     * @param string $jobName
+     *
      * @return JobInterface
      * @throws EmptyQueueException
      * @throws QueueServerErrorException
      **/
     public function getJob(string $jobName): JobInterface
     {
-        try {
-            $result = $this->client->receiveMessage([
-                'QueueUrl' => $this->getQueueUrlForJobName($jobName),
-                'WaitTimeSeconds' => $this->waitSeconds,
-                'MaxNumberOfMessages' => 1
-            ]);
-        } catch (SqsException $e) {
-            throw new QueueServerErrorException('Unable to send request to receive message', $e->getCode(), $e);
-        }
+        $result = $this->receiveMessage($jobName);
 
-        if (empty($result->getPath('Messages'))) {
+        $messages = $result->get('Messages');
+        if (empty($messages) || !is_array($messages)) {
             throw new EmptyQueueException();
         }
 
-        foreach ($result->getPath('Messages') as $messageData) {
-            $body = json_decode($messageData['Body'], true);
+        $messageData = $messages[0];
 
-            if ($this->wasJsonError()) {
-                $body = [];
-            }
+        $body = json_decode($messageData['Body'], true) ?: [];
 
-            $job = new SQSJob(
-                $body,
-                $this->client,
-                $this->getQueueUrlForJobName($jobName),
-                $messageData['ReceiptHandle'],
-                $this->doneLog,
-                $messageData['MessageId']
+        $job = $this->createJob($jobName, $body, $messageData);
+
+        $this->verifyMessage($messageData, $job);
+
+        return $job;
+    }
+
+    /**
+     * Purge the queue of a given job
+     *
+     * @param string $jobName
+     *
+     * @return bool
+     * @throws QueueServerErrorException
+     */
+    public function purgeJobs(string $jobName): bool
+    {
+        try {
+            $this->client->purgeQueue(
+                [
+                    'QueueUrl' => $this->getQueueUrlForJobName($jobName),
+                ]
             );
-
-            if (
-                $this->wasJsonError()
-                || $this->doneLog->hasJob($messageData['MessageId'])
-            ) {
-                $job->markDone();
-
-                throw new EmptyQueueException();
-            }
-
-            return $job;
+        } catch (SqsException $e) {
+            throw new QueueServerErrorException('Failed to purge the specified queue', $e->getCode(), $e);
         }
+
+        return true;
     }
 
     /**
      * @param string $jobName
+     *
      * @return string
      */
     private function getQueueUrlForJobName(string $jobName): string
@@ -224,5 +261,63 @@ class SQSQueueManager implements QueueManagerInterface
     private function wasJsonError(): bool
     {
         return json_last_error() !== JSON_ERROR_NONE;
+    }
+
+    /**
+     * @param string $jobName
+     *
+     * @return Result
+     * @throws QueueServerErrorException
+     */
+    private function receiveMessage(string $jobName): Result
+    {
+        try {
+            return $this->client->receiveMessage(
+                [
+                    'QueueUrl'            => $this->getQueueUrlForJobName($jobName),
+                    'WaitTimeSeconds'     => $this->waitSeconds,
+                    'MaxNumberOfMessages' => 1,
+                ]
+            );
+        } catch (SqsException $e) {
+            throw new QueueServerErrorException('Unable to send request to receive message', $e->getCode(), $e);
+        }
+    }
+
+    /**
+     * @param string $jobName
+     * @param $body
+     * @param $messageData
+     *
+     * @return SQSJob
+     */
+    private function createJob(string $jobName, $body, $messageData): SQSJob
+    {
+        return new SQSJob(
+            $body,
+            $this->client,
+            $this->getQueueUrlForJobName($jobName),
+            $messageData['ReceiptHandle'],
+            $this->doneLog,
+            $messageData['MessageId']
+        );
+    }
+
+    /**
+     * @param array $messageData
+     * @param JobInterface $job
+     *
+     * @throws EmptyQueueException
+     */
+    private function verifyMessage(array $messageData, JobInterface $job): void
+    {
+        if (
+            $this->wasJsonError()
+            || $this->doneLog->hasJob($messageData['MessageId'])
+        ) {
+            $job->markDone();
+
+            throw new EmptyQueueException();
+        }
     }
 }

@@ -20,6 +20,7 @@ class OfflineQueueManager implements QueueManagerInterface
 
     /**
      * OfflineQueueManager constructor.
+     *
      * @param JobHandlerInterface[] $jobHandlers
      */
     public function __construct(array $jobHandlers)
@@ -30,6 +31,7 @@ class OfflineQueueManager implements QueueManagerInterface
     /**
      * @param string $jobName
      * @param array $jobData
+     *
      * @return bool
      */
     public function addJob(string $jobName, array $jobData): bool
@@ -47,6 +49,7 @@ class OfflineQueueManager implements QueueManagerInterface
 
     /**
      * @param string $jobName
+     *
      * @return JobInterface
      */
     public function getJob(string $jobName): JobInterface
@@ -54,4 +57,13 @@ class OfflineQueueManager implements QueueManagerInterface
         throw new BadMethodCallException('Offline Queue does not have anywhere to pull jobs from');
     }
 
+    /**
+     * @param string $jobName
+     *
+     * @return bool
+     */
+    public function purgeJobs(string $jobName): bool
+    {
+        throw new BadMethodCallException('Offline Queue does not have anything to purge');
+    }
 }

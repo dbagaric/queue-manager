@@ -9,6 +9,9 @@ use Aws\Sqs\SqsClient;
 
 class SQSJobTest extends TestCase
 {
+    private $mockClient;
+    private $mockDoneLog;
+
     public function setUp()
     {
         $this->mockClient = $this->getMockBuilder(SqsClient::class)
