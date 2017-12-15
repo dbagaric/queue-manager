@@ -116,7 +116,7 @@ an array with the settings to pass to the queue's client.
 ```php
 /** @var QueueManagerInterface $queueManager */
 $queueManager = $queueManagerFactory->make(
-    QueueManagerFactory::TYPE_DISQUE, // or QueueManagerFactory::TYPE_OFFLINE
+    QueueManagerFactory::TYPE_SQS, // or QueueManagerFactory::TYPE_OFFLINE
     $settings
 );
 ```
@@ -143,7 +143,7 @@ class SomeDoneLog implements \Punchkick\QueueManager\DoneLog\DoneLogInterface
 }
 
 $queueManager = $queueManagerFactory->make(
-    QueueManagerFactory::TYPE_DISQUE, // or QueueManagerFactory::TYPE_OFFLINE
+    QueueManagerFactory::TYPE_SQS, // or QueueManagerFactory::TYPE_OFFLINE
     $settings,
     new SomeDoneLog()
 );
@@ -154,8 +154,7 @@ $queueManager = $queueManagerFactory->make(
 
 Once you have an instance of QueueManagerInterface, you can queue up jobs using 
 the `addJob` method. Pass in the name of your job and the job data in the form 
-of an array. Jobs queued in Disque will have a TTL of one week. After that, the job will 
-be deleted from the queue. The TTL is a requirement of Disque.
+of an array.  
 
 ```php
 $queueManager->addJob(YourJobHandler::getJobName(), ['your_key' => 'your_val']);
