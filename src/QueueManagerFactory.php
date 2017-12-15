@@ -122,7 +122,8 @@ class QueueManagerFactory
             $doneLog,
             $settings['baseUrl'],
             $settings['env'],
-            isset($settings['waitSeconds']) ? (int)$settings['waitSeconds'] : 5
+            isset($settings['waitSeconds']) ? (int)$settings['waitSeconds'] : 5,
+            isset($settings['delaySeconds']) ? (int)$settings['delaySeconds'] : null
         );
     }
 
